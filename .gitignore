@@ -1,0 +1,10 @@
+# Project-created files
+.idea/
+target/
+dependency-reduced-pom.xml
+
+# Program-created files
+
+# OS-related files
+.DS_Store
+*.save

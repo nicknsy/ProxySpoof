@@ -1,0 +1,7 @@
+name: ${project.name}
+main: me.nick.proxyspoof.bungee.BungeePlugin
+version: ${project.version}
+author: ${project.author}
+commands:
+  spoof:
+    description: Spoof UUID, IP, and skin data.
