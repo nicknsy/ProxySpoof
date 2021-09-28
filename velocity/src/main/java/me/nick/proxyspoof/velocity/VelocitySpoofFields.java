@@ -2,7 +2,6 @@ package me.nick.proxyspoof.velocity;
 
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
-import java.util.Random;
 
 public class VelocitySpoofFields
 {
@@ -32,11 +31,5 @@ public class VelocitySpoofFields
         {
             e.printStackTrace();
         }
-    }
-
-    public static String getRandomIp()
-    {
-        Random r = new Random();
-        return r.nextInt(256) + "." + r.nextInt(256) + "." + r.nextInt(256) + "." + r.nextInt(256);
     }
 }

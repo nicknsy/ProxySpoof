@@ -4,7 +4,6 @@ import net.md_5.bungee.connection.InitialHandler;
 
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
-import java.util.Random;
 
 public class BungeeSpoofFields
 {
@@ -38,11 +37,5 @@ public class BungeeSpoofFields
         {
             e.printStackTrace();
         }
-    }
-
-    public static String getRandomIp()
-    {
-        Random r = new Random();
-        return r.nextInt(256) + "." + r.nextInt(256) + "." + r.nextInt(256) + "." + r.nextInt(256);
     }
 }
