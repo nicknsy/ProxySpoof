@@ -5,11 +5,12 @@
     <parent>
         <artifactId>proxyspoof-parent</artifactId>
         <groupId>me.nick</groupId>
-        <version>1.0</version>
+        <version>1.0.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>proxyspoof-bungee</artifactId>
+    <version>1.0.0</version>
 
     <properties>
         <maven.compiler.source>16</maven.compiler.source>

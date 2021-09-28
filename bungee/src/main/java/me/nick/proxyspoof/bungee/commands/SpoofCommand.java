@@ -23,6 +23,7 @@ public class SpoofCommand extends Command
     @Override
     public void execute(CommandSender sender, String[] args)
     {
+        /*
         // No args
         if (args.length < 1)
         {
@@ -64,12 +65,14 @@ public class SpoofCommand extends Command
 
         SpoofedSettings settings = settingsManager.getPlayerSettings(targetPlayer);
 
+        // TODO: Common
         switch (setting.toLowerCase())
         {
             case "player":
                 settings.setSpoofedName(data);
                 settings.setSpoofedId(MojangApi.getUUID(data));
-                settings.setSpoofedSkin(ApiUtil.getSkin(settings.getSpoofedId(), gson));
+                // TODO: Check online before skin set
+                settings.setSpoofedSkin(MojangApi.getSkin(settings.getSpoofedId().getId()));
                 break;
             case "name":
                 settings.setSpoofedName(data);
@@ -79,10 +82,10 @@ public class SpoofCommand extends Command
                 break;
             case "id":
             case "uuid":
-                settings.setSpoofedId(ApiUtil.getUUID(data));
+                settings.setSpoofedId(MojangApi.getUUID(data));
                 break;
             case "skin":
-                settings.setSpoofedSkin(ApiUtil.getSkin(ApiUtil.getUUID(data), gson));
+                settings.setSpoofedSkin(MojangApi.getSkin(MojangApi.getUUID(data).getId()));
                 break;
             default:
                 sender.sendMessage(ChatUtil.formatColor("&6Unknown setting &c\"" + setting + "\""));
@@ -90,12 +93,15 @@ public class SpoofCommand extends Command
         }
 
         sender.sendMessage(ChatUtil.formatColor("&6Updated spoofed &c" + setting + "&6 setting to &c" + data));
+        */
     }
 
     private void messageHelp(CommandSender sender)
     {
+        /*
         sender.sendMessage(ChatUtil.formatColor("&c&lSpoof Usage"));
         sender.sendMessage(ChatUtil.formatColor("&6/spoof [player] <player(name/id/skin)/ip> <data>"));
         sender.sendMessage(ChatUtil.formatColor("&6/spoof clearcache"));
+         */
     }
 }

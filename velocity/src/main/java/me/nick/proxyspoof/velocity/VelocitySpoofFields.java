@@ -1,22 +1,16 @@
-package me.nick.proxyspoof.bungee;
-
-import net.md_5.bungee.connection.InitialHandler;
+package me.nick.proxyspoof.velocity;
 
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.util.Random;
 
-public class BungeeSpoofFields
+public class VelocitySpoofFields
 {
 
-    /*
-     * JAVA 16: --add-opens java.base/java.net=ALL-UNNAMED
-     */
     public static Field NAME_FIELD;
     public static Field UUID_FIELD;
     public static Field SKIN_FIELD;
     public static Field IP_HOLDER_FIELD;
-    public static Field IP_HOLDER_HOSTNAME_FIELD;
 
     static
     {
