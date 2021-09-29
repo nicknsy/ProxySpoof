@@ -5,10 +5,10 @@ import com.google.gson.GsonBuilder;
 
 public class GsonInstance
 {
-    private static final Gson GSON_INSTANCE = new GsonBuilder().setLenient().create();
+    private static final Gson GSON = new GsonBuilder().setLenient().create();
 
     public static Gson gson()
     {
-        return GSON_INSTANCE;
+        return GSON;
     }
 }

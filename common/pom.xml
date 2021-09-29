@@ -6,12 +6,10 @@
         <artifactId>proxyspoof-parent</artifactId>
         <groupId>me.nick</groupId>
         <version>1.0.0</version>
-        <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>proxyspoof-common</artifactId>
-    <version>1.0.0</version>
     <packaging>jar</packaging>
 
     <properties>
