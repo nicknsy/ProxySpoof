@@ -3,13 +3,16 @@ package me.nick.proxyspoof.common.commands;
 import me.nick.proxyspoof.common.SettingsManager;
 import me.nick.proxyspoof.common.SpoofedSettings;
 import me.nick.proxyspoof.common.mojang.MojangApi;
-import me.nick.proxyspoof.common.mojang.UUIDResponse;
+import me.nick.proxyspoof.common.utils.NetworkUtil;
+import org.apache.commons.text.StringEscapeUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class SpoofCommandBase
 {
+
+    private static List<String> spoofSuggestions = List.of("player", "name", "uuid", "ip", "skin");
 
     public void execute(SettingsManager settingsManager, AbstractExecutor executor, String[] args)
     {
@@ -57,46 +60,115 @@ public class SpoofCommandBase
         {
             case "player":
                 settings.setSpoofedName(data);
+                settings.setSpoofedIp(NetworkUtil.getRandomIp());
 
-                UUIDResponse uuidResponse = MojangApi.getUUID(data);
-                settings.setSpoofedId(uuidResponse);
-                if (uuidResponse.isOnlineMode())
-                    settings.setSpoofedName(uuidResponse.getName());
-                    settings.setSpoofedSkin(MojangApi.getSkin(settings.getSpoofedId().getId()));
+                MojangApi.getUUID(data).whenComplete((uuidResponse, throwable) ->
+                {
+                    settings.setSpoofedId(uuidResponse);
+                    if (uuidResponse.isOnlineMode())
+                    {
+                        settings.setSpoofedName(uuidResponse.getName());
+                        MojangApi.getSkin(uuidResponse.getId()).whenComplete((loginResponse, throwable1) ->
+                        {
+                            settings.setSpoofedProfile(loginResponse);
+                            messageComplete(executor, setting, uuidResponse.getName());
+                        });
+                    }
+                    else
+                    {
+                        messageComplete(executor, setting, uuidResponse.getName());
+                    }
+                });
                 break;
             case "name":
-                settings.setSpoofedName(data);
+                settings.setSpoofedName(StringEscapeUtils.unescapeJava(data));
+                messageComplete(executor, setting, data);
                 break;
             case "ip":
                 settings.setSpoofedIp(data);
+                messageComplete(executor, setting, data);
                 break;
             case "id":
             case "uuid":
-                settings.setSpoofedId(MojangApi.getUUID(data));
+                MojangApi.getUUID(data).whenComplete((uuidResponse, throwable) ->
+                {
+                    settings.setSpoofedId(uuidResponse);
+                    messageComplete(executor, setting, data);
+                });
                 break;
             case "skin":
-                settings.setSpoofedSkin(MojangApi.getSkin(MojangApi.getUUID(data).getId()));
+                MojangApi.getUUID(data).whenComplete((uuidResponse, throwable) ->
+                {
+                    if (uuidResponse.isOnlineMode())
+                    {
+                        MojangApi.getSkin(uuidResponse.getId()).whenComplete((loginResponse, throwable1) ->
+                        {
+                            settings.setSpoofedProfile(loginResponse);
+                            messageComplete(executor, setting, data);
+                        });
+                    }
+                    else
+                    {
+                        executor.sendFormattedMessage("&6Couldn't fetch that player's skin!");
+                    }
+                });
                 break;
             default:
                 executor.sendFormattedMessage("&6Unknown setting &c\"" + setting + "\"");
                 return;
         }
-
-        executor.sendFormattedMessage("&6Updated spoofed &c" + setting + "&6 setting to &c" + data);
     }
 
     public List<String> tabComplete(AbstractExecutor executor, String[] args)
     {
         List<String> suggestions = new ArrayList<>();
-        suggestions.add("hi");
+        boolean isPlayer = executor.isPlayer();
+
+        switch (args.length)
+        {
+            case 0:
+            case 1:
+                if (isPlayer)
+                    return spoofSuggestions;
+                else
+                    suggestions.add("<player>");
+                break;
+            case 2:
+                if (isPlayer)
+                    return getSubSuggestions(args[0]);
+                else
+                    return spoofSuggestions;
+            case 3:
+                if (!isPlayer) return getSubSuggestions(args[1]);
+                break;
+        }
 
         return suggestions;
     }
 
-    protected void messageHelp(AbstractExecutor executor)
+    private List<String> getSubSuggestions(String subCommand)
+    {
+        List<String> suggestions = new ArrayList<>();
+
+        switch (subCommand)
+        {
+            case "ip":
+                suggestions.add(NetworkUtil.getRandomIp());
+                break;
+        }
+
+        return suggestions;
+    }
+
+    private void messageHelp(AbstractExecutor executor)
     {
         executor.sendFormattedMessage("&c&lSpoof Usage");
         executor.sendFormattedMessage("&6/spoof [player] <player(name/id/skin)/ip>[:raw] <data>");
         executor.sendFormattedMessage("&6/spoof clearcache");
+    }
+
+    private void messageComplete(AbstractExecutor executor, String setting, String data)
+    {
+        executor.sendFormattedMessage("&6Updated spoofed &c" + setting + "&6 setting to &c" + data);
     }
 }

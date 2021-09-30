@@ -8,14 +8,14 @@ public class SpoofedSettings
 
     private String spoofedName;
     private UUIDResponse spoofedId;
-    private LoginResponse spoofedSkin;
+    private LoginResponse spoofedProfile;
     private String spoofedIp;
 
     public void clear()
     {
         spoofedName = null;
         spoofedId = null;
-        spoofedSkin = null;
+        spoofedProfile = null;
         spoofedIp = null;
     }
 
@@ -39,14 +39,14 @@ public class SpoofedSettings
         this.spoofedId = spoofedId;
     }
 
-    public LoginResponse getSpoofedSkin()
+    public LoginResponse getSpoofedProfile()
     {
-        return spoofedSkin;
+        return spoofedProfile;
     }
 
-    public void setSpoofedSkin(LoginResponse spoofedSkin)
+    public void setSpoofedProfile(LoginResponse spoofedProfile)
     {
-        this.spoofedSkin = spoofedSkin;
+        this.spoofedProfile = spoofedProfile;
     }
 
     public String getSpoofedIp()

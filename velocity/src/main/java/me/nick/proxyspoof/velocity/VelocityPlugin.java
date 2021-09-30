@@ -11,7 +11,7 @@ import me.nick.proxyspoof.common.commands.SpoofCommandBase;
 import me.nick.proxyspoof.velocity.commands.SpoofCommand;
 import me.nick.proxyspoof.velocity.listeners.ConnectionListener;
 
-@Plugin(id = "proxyspoof", name = "ProxySpoof", version = "1.0.0", authors = {"Nick"})
+@Plugin(id = "proxyspoof", name = "ProxySpoof", version = "${project.version}", authors = {"Nick"})
 public class VelocityPlugin
 {
 

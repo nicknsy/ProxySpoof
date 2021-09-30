@@ -17,7 +17,7 @@ public class BungeePlugin extends Plugin
     {
         PluginManager pluginManager = getProxy().getPluginManager();
 
-        pluginManager.registerListener(this, new ConnectionListener(settingsManager));
+        pluginManager.registerListener(this, new ConnectionListener(this, settingsManager));
         pluginManager.registerCommand(this, new SpoofCommand(new SpoofCommandBase(), settingsManager));
     }
 }
