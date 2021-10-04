@@ -5,7 +5,7 @@
     <parent>
         <artifactId>proxyspoof-parent</artifactId>
         <groupId>me.nick</groupId>
-        <version>1.0</version>
+        <version>1.1.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -31,10 +31,34 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
+            <groupId>org.javassist</groupId>
+            <artifactId>javassist</artifactId>
+            <version>3.28.0-GA</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
             <groupId>com.velocitypowered</groupId>
             <artifactId>velocity-api</artifactId>
             <version>3.0.1</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>com.velocitypowered</groupId>
+            <artifactId>velocity-proxy</artifactId>
+            <version>3.0.2-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
+
+    <build>
+        <resources>
+            <resource>
+                <filtering>true</filtering>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>velocity-plugin.json</include>
+                </includes>
+            </resource>
+        </resources>
+    </build>
 </project>

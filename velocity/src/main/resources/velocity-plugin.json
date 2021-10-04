@@ -1,0 +1,1 @@
+{"id":"proxyspoof","name":"ProxySpoof","version":"${project.version}","authors":["Nick"],"dependencies":[],"main":"me.nick.proxyspoof.velocity.VelocityPlugin"}

@@ -3,56 +3,31 @@ package me.nick.proxyspoof.common.mojang;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import me.nick.proxyspoof.common.GsonInstance;
+import org.asynchttpclient.AsyncHttpClient;
+import org.asynchttpclient.ListenableFuture;
+import org.asynchttpclient.Response;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+
+import static org.asynchttpclient.Dsl.asyncHttpClient;
 
 public class MojangApi
 {
 
-    private static final int TIMEOUT = 5000;
     private static final Gson GSON = GsonInstance.gson();
     private static final String API_UUID_URL = "https://api.mojang.com/users/profiles/minecraft/%s";
     private static final String API_SKIN_URL = "https://sessionserver.mojang.com/session/minecraft/profile/%s?unsigned=false";
+
+    private static AsyncHttpClient httpClient = asyncHttpClient();
 
     // Caches -- no time limit as data is mostly non-changing
     // Must be manually reset through command
     private static Map<String, UUIDResponse> uuidCache = new HashMap<>();
     private static Map<String, LoginResponse> skinCache = new HashMap<>();
-
-    public static HttpResponse request(String urlString) throws IOException
-    {
-        URL url = new URL(urlString);
-        HttpURLConnection urlConn = (HttpURLConnection) url.openConnection();
-
-        urlConn.setConnectTimeout(TIMEOUT);
-        urlConn.setReadTimeout(TIMEOUT);
-
-        StringBuilder builder = new StringBuilder();
-        int responseCode = urlConn.getResponseCode();
-
-        if (responseCode == 200)
-        {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(urlConn.getInputStream(), StandardCharsets.UTF_8));
-
-            // Read response
-            String input;
-            while ((input = reader.readLine()) != null)
-            {
-                builder.append(input);
-            }
-            reader.close();
-        }
-
-        return new HttpResponse(responseCode, builder.toString());
-    }
 
     /**
      * Clears both UUID and skin caches
@@ -64,23 +39,31 @@ public class MojangApi
     }
 
     /**
-     * Returns a UUID object (dashed) of a player given
+     * Returns an online or offline UUID of a player given
      * their name.
      *
      * @param name name of player
-     * @return UUIDResponse containing UUID of specified player, or OfflineUUID on error
+     * @return CompletableFuture that returns online UUIDResponse of specified player, or offline UUIDResponse on error
      */
-    public static UUIDResponse getUUID(String name)
+    public static CompletableFuture<UUIDResponse> getUUID(String name)
     {
-        if (uuidCache.containsKey(name)) return uuidCache.get(name);
+        CompletableFuture<UUIDResponse> uuidResponseFuture = new CompletableFuture<>();
+        String cachedName = name.toLowerCase();
 
-        try
+        // Check cache
+        if (uuidCache.containsKey(cachedName))
         {
-            HttpResponse response = request(String.format(API_UUID_URL, name));
+            uuidResponseFuture.complete(uuidCache.get(cachedName));
+            return uuidResponseFuture;
+        }
 
-            if (response.getResponseCode() == 200)
+        // Request from Mojang servers
+        ListenableFuture<Response> responseFuture = httpClient.prepareGet(String.format(API_UUID_URL, name)).execute();
+        responseFuture.toCompletableFuture().whenComplete((response, throwable) ->
+        {
+            if (response.getStatusCode() == 200)
             {
-                String content = response.getContent();
+                String content = response.getResponseBody();
                 StringBuilder uuidBuilder = new StringBuilder();
 
                 JsonObject responseObject = GSON.fromJson(content, JsonObject.class);
@@ -96,16 +79,16 @@ public class MojangApi
                 UUID responseId = UUID.fromString(uuidBuilder.toString());
                 UUIDResponse onlineResponse = new UUIDResponse(responseName, responseId, true);
 
-                uuidCache.put(responseName, onlineResponse);
-                return onlineResponse;
+                uuidCache.put(responseName.toLowerCase(), onlineResponse);
+                uuidResponseFuture.complete(onlineResponse);
             }
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-        }
 
-        return new UUIDResponse(name, UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(StandardCharsets.UTF_8)), false);
+            // Return offline UUID on error
+            if (!uuidResponseFuture.isDone())
+                uuidResponseFuture.complete(getOfflineUUID(name));
+        });
+
+        return uuidResponseFuture;
     }
 
     /**
@@ -113,9 +96,9 @@ public class MojangApi
      * skin properties of a certain player given their uuid.
      *
      * @param uuid player UUID object
-     * @return LoginResponse with skin stored in properties, or null on error
+     * @return CompletableFuture returning LoginResponse with skin stored in properties, or null on error
      */
-    public static LoginResponse getSkin(UUID uuid)
+    public static CompletableFuture<LoginResponse> getSkin(UUID uuid)
     {
         return getSkin(uuid.toString().replace("-", ""));
     }
@@ -125,28 +108,41 @@ public class MojangApi
      * skin properties of a certain player given their uuid.
      *
      * @param uuid player UUID string without dashes
-     * @return LoginResponse with skin stored in properties, or null on error
+     * @return CompletableFuture returning LoginResponse with skin stored in properties, or null on error
      */
-    public static LoginResponse getSkin(String uuid)
+    public static CompletableFuture<LoginResponse> getSkin(String uuid)
     {
-        if (skinCache.containsKey(uuid)) return skinCache.get(uuid);
+        CompletableFuture<LoginResponse> loginResponseFuture = new CompletableFuture<>();
 
-        LoginResponse loginResponse = null;
-        try
+        // Check cache
+        if (skinCache.containsKey(uuid))
         {
-            HttpResponse response = request(String.format(API_SKIN_URL, uuid));
+            loginResponseFuture.complete(skinCache.get(uuid));
+            return loginResponseFuture;
+        }
 
-            if (response.getResponseCode() == 200)
+        // Request from Mojang servers
+        ListenableFuture<Response> responseFuture = httpClient.prepareGet(String.format(API_SKIN_URL, uuid)).execute();
+        responseFuture.toCompletableFuture().whenComplete((response, throwable) ->
+        {
+            if (response.getStatusCode() == 200)
             {
-                loginResponse = GSON.fromJson(response.getContent(), LoginResponse.class);
-                skinCache.put(uuid, loginResponse);
-            }
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-        }
+                LoginResponse loginResponse = GSON.fromJson(response.getResponseBody(), LoginResponse.class);
 
-        return loginResponse;
+                skinCache.put(uuid, loginResponse);
+                loginResponseFuture.complete(loginResponse);
+            }
+
+            // Return null on error
+            if (!loginResponseFuture.isDone())
+                loginResponseFuture.complete(null);
+        });
+
+        return loginResponseFuture;
+    }
+
+    public static UUIDResponse getOfflineUUID(String name)
+    {
+        return new UUIDResponse(name, UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(StandardCharsets.UTF_8)), false);
     }
 }

@@ -6,17 +6,26 @@ import me.nick.proxyspoof.common.mojang.UUIDResponse;
 public class SpoofedSettings
 {
 
+    private static String defaultHost;
+
     private String spoofedName;
     private UUIDResponse spoofedId;
-    private LoginResponse spoofedSkin;
+    private LoginResponse spoofedProfile;
     private String spoofedIp;
+    private String spoofedHost;
+
+    public static void clearDefaults()
+    {
+        defaultHost = null;
+    }
 
     public void clear()
     {
         spoofedName = null;
         spoofedId = null;
-        spoofedSkin = null;
+        spoofedProfile = null;
         spoofedIp = null;
+        spoofedHost = null;
     }
 
     public String getSpoofedName()
@@ -39,14 +48,14 @@ public class SpoofedSettings
         this.spoofedId = spoofedId;
     }
 
-    public LoginResponse getSpoofedSkin()
+    public LoginResponse getSpoofedProfile()
     {
-        return spoofedSkin;
+        return spoofedProfile;
     }
 
-    public void setSpoofedSkin(LoginResponse spoofedSkin)
+    public void setSpoofedProfile(LoginResponse spoofedProfile)
     {
-        this.spoofedSkin = spoofedSkin;
+        this.spoofedProfile = spoofedProfile;
     }
 
     public String getSpoofedIp()
@@ -57,5 +66,20 @@ public class SpoofedSettings
     public void setSpoofedIp(String spoofedIp)
     {
         this.spoofedIp = spoofedIp;
+    }
+
+    public void setSpoofedHost(String spoofedHost)
+    {
+        this.spoofedHost = spoofedHost;
+    }
+
+    public static void setDefaultHost(String defaultHost)
+    {
+        SpoofedSettings.defaultHost = defaultHost;
+    }
+
+    public String getSpoofedHostOrDefault()
+    {
+        return spoofedHost != null ? spoofedHost : (defaultHost != null ? defaultHost : spoofedIp);
     }
 }

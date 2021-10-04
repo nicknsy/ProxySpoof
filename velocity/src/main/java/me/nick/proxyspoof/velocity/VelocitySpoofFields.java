@@ -1,37 +1,31 @@
-package me.nick.proxyspoof.bungee;
+package me.nick.proxyspoof.velocity;
 
-import net.md_5.bungee.connection.InitialHandler;
+import com.velocitypowered.proxy.connection.client.InitialInboundConnection;
 
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 
-public class BungeeSpoofFields
+public class VelocitySpoofFields
 {
 
     /*
      * JAVA 16: --add-opens java.base/java.net=ALL-UNNAMED
      */
-    public static Field NAME_FIELD;
-    public static Field UUID_FIELD;
-    public static Field LOGIN_PROFILE_FIELD;
     public static Field IP_HOLDER_FIELD;
     public static Field IP_HOLDER_HOSTNAME_FIELD;
+    public static Field VIRTUAL_HOST_FIELD;
 
     static
     {
         try
         {
-            NAME_FIELD = InitialHandler.class.getDeclaredField("name");
-            UUID_FIELD = InitialHandler.class.getDeclaredField("uniqueId");
-            LOGIN_PROFILE_FIELD = InitialHandler.class.getDeclaredField("loginProfile");
             IP_HOLDER_FIELD = InetSocketAddress.class.getDeclaredField("holder");
             IP_HOLDER_HOSTNAME_FIELD = IP_HOLDER_FIELD.getType().getDeclaredField("hostname");
+            VIRTUAL_HOST_FIELD = InitialInboundConnection.class.getDeclaredField("cleanedAddress");
 
-            NAME_FIELD.setAccessible(true);
-            UUID_FIELD.setAccessible(true);
-            LOGIN_PROFILE_FIELD.setAccessible(true);
             IP_HOLDER_FIELD.setAccessible(true);
             IP_HOLDER_HOSTNAME_FIELD.setAccessible(true);
+            VIRTUAL_HOST_FIELD.setAccessible(true);
         }
         catch (NoSuchFieldException e)
         {

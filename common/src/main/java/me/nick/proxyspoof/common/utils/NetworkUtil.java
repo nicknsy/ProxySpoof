@@ -4,10 +4,10 @@ import java.util.Random;
 
 public class NetworkUtil
 {
+    private static final Random rand = new Random();
 
     public static String getRandomIp()
     {
-        Random r = new Random();
-        return r.nextInt(256) + "." + r.nextInt(256) + "." + r.nextInt(256) + "." + r.nextInt(256);
+        return rand.nextInt(256) + "." + rand.nextInt(256) + "." + rand.nextInt(256) + "." + rand.nextInt(256);
     }
 }
