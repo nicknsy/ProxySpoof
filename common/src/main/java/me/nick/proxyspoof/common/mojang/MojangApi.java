@@ -2,7 +2,6 @@ package me.nick.proxyspoof.common.mojang;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import io.netty.channel.EventLoop;
 import me.nick.proxyspoof.common.GsonInstance;
 import org.asynchttpclient.AsyncHttpClient;
 import org.asynchttpclient.ListenableFuture;
@@ -13,7 +12,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 import static org.asynchttpclient.Dsl.asyncHttpClient;
 
@@ -87,7 +85,7 @@ public class MojangApi
 
             // Return offline UUID on error
             if (!uuidResponseFuture.isDone())
-                uuidResponseFuture.complete(new UUIDResponse(name, UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(StandardCharsets.UTF_8)), false));
+                uuidResponseFuture.complete(getOfflineUUID(name));
         });
 
         return uuidResponseFuture;
@@ -141,5 +139,10 @@ public class MojangApi
         });
 
         return loginResponseFuture;
+    }
+
+    public static UUIDResponse getOfflineUUID(String name)
+    {
+        return new UUIDResponse(name, UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(StandardCharsets.UTF_8)), false);
     }
 }

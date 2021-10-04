@@ -7,17 +7,15 @@ import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.connection.PreLoginEvent;
 import com.velocitypowered.api.event.player.GameProfileRequestEvent;
 import com.velocitypowered.api.util.GameProfile;
-import com.velocitypowered.proxy.connection.MinecraftConnection;
 import com.velocitypowered.proxy.connection.client.InitialInboundConnection;
 import me.nick.proxyspoof.common.SettingsManager;
 import me.nick.proxyspoof.common.SpoofedSettings;
 import me.nick.proxyspoof.common.mojang.LoginResponse;
-import net.kyori.adventure.text.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static me.nick.proxyspoof.velocity.VelocitySpoofFields.VIRTUAL_HOST_FIELD;
+import static me.nick.proxyspoof.velocity.VelocitySpoofFields.*;
 
 public class ConnectionListener
 {
@@ -42,8 +40,10 @@ public class ConnectionListener
 
             try
             {
-                // Virtual host is used for both hostname and player IP
-                VIRTUAL_HOST_FIELD.set(inboundCon, settings.getSpoofedIp());
+                // Set virtual host and ip
+                Object ipHolder = IP_HOLDER_FIELD.get(inboundCon.getRemoteAddress());
+                IP_HOLDER_HOSTNAME_FIELD.set(ipHolder, settings.getSpoofedIp());
+                VIRTUAL_HOST_FIELD.set(inboundCon, settings.getSpoofedHostOrDefault());
             }
             catch (IllegalAccessException e)
             {

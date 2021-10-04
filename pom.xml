@@ -6,7 +6,7 @@
 
     <groupId>me.nick</groupId>
     <artifactId>proxyspoof-parent</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
     <name>ProxySpoof</name>
     <packaging>pom</packaging>
 

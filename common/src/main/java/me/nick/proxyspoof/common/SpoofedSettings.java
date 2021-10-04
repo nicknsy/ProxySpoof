@@ -6,10 +6,18 @@ import me.nick.proxyspoof.common.mojang.UUIDResponse;
 public class SpoofedSettings
 {
 
+    private static String defaultHost;
+
     private String spoofedName;
     private UUIDResponse spoofedId;
     private LoginResponse spoofedProfile;
     private String spoofedIp;
+    private String spoofedHost;
+
+    public static void clearDefaults()
+    {
+        defaultHost = null;
+    }
 
     public void clear()
     {
@@ -17,6 +25,7 @@ public class SpoofedSettings
         spoofedId = null;
         spoofedProfile = null;
         spoofedIp = null;
+        spoofedHost = null;
     }
 
     public String getSpoofedName()
@@ -57,5 +66,20 @@ public class SpoofedSettings
     public void setSpoofedIp(String spoofedIp)
     {
         this.spoofedIp = spoofedIp;
+    }
+
+    public void setSpoofedHost(String spoofedHost)
+    {
+        this.spoofedHost = spoofedHost;
+    }
+
+    public static void setDefaultHost(String defaultHost)
+    {
+        SpoofedSettings.defaultHost = defaultHost;
+    }
+
+    public String getSpoofedHostOrDefault()
+    {
+        return spoofedHost != null ? spoofedHost : (defaultHost != null ? defaultHost : spoofedIp);
     }
 }

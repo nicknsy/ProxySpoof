@@ -3,14 +3,12 @@ package me.nick.proxyspoof.bungee.listeners;
 import me.nick.proxyspoof.bungee.BungeePlugin;
 import me.nick.proxyspoof.common.SettingsManager;
 import me.nick.proxyspoof.common.mojang.LoginResponse;
-import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.event.PlayerDisconnectEvent;
 import net.md_5.bungee.api.event.PreLoginEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.connection.InitialHandler;
 import net.md_5.bungee.connection.LoginResult;
 import net.md_5.bungee.event.EventHandler;
-import net.md_5.bungee.netty.ChannelWrapper;
 
 import static me.nick.proxyspoof.bungee.BungeeSpoofFields.*;
 
@@ -32,7 +30,7 @@ public class ConnectionListener implements Listener
         if (!(event.getConnection() instanceof InitialHandler))
             return;
 
-        // Block login thread
+        // Block login from completing
         event.registerIntent(plugin);
 
         InitialHandler handler = (InitialHandler) event.getConnection();
@@ -42,7 +40,7 @@ public class ConnectionListener implements Listener
         settingsManager.initializeAndGet(name).whenComplete((settings, throwable) ->
         {
             // Set host and skin
-            handler.getHandshake().setHost(settings.getSpoofedIp());
+            handler.getHandshake().setHost(settings.getSpoofedHostOrDefault());
 
             LoginResult.Property[] properties = new LoginResult.Property[0];
             LoginResponse.Property[] spoofedProperties;

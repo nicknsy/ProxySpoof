@@ -44,7 +44,7 @@ public class VelocityPlugin
             CtClass inetClass = ClassPool.getDefault().get("com.velocitypowered.proxy.connection.backend.VelocityServerConnection");
             CtMethod getAddressMethod = inetClass.getDeclaredMethod("getPlayerRemoteAddressAsString");
 
-            getAddressMethod.setBody("return ((java.net.InetSocketAddress) proxyPlayer.getVirtualHost().get()).getHostString();");
+            getAddressMethod.setBody("return proxyPlayer.getRemoteAddress().getHostString();");
 
             inetClass.toClass();
         }

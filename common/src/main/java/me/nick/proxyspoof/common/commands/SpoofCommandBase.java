@@ -3,16 +3,27 @@ package me.nick.proxyspoof.common.commands;
 import me.nick.proxyspoof.common.SettingsManager;
 import me.nick.proxyspoof.common.SpoofedSettings;
 import me.nick.proxyspoof.common.mojang.MojangApi;
+import me.nick.proxyspoof.common.mojang.UUIDResponse;
 import me.nick.proxyspoof.common.utils.NetworkUtil;
 import org.apache.commons.text.StringEscapeUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public class SpoofCommandBase
 {
 
-    private static List<String> spoofSuggestions = List.of("player", "name", "uuid", "ip", "skin");
+    private List<String> subCommands = List.of("player", "name", "uuid", "ip", "skin", "host");
+    private Map<String, List<String>> subModifiers = Map.of(
+            "player", List.of("offline"),
+            "host", List.of("default"),
+            "name", List.of("raw"),
+            "uuid", List.of("raw", "offline"),
+            "id", List.of("raw", "offline")
+    );
 
     public void execute(SettingsManager settingsManager, AbstractExecutor executor, String[] args)
     {
@@ -23,12 +34,19 @@ public class SpoofCommandBase
             return;
         }
 
-        // One arg -- clearcache
-        if (args[0].equalsIgnoreCase("clearcache") || args[0].equalsIgnoreCase("resetcache"))
+        // One arg commands
+        switch (args[0].toLowerCase())
         {
-            MojangApi.clearCache();
-            executor.sendFormattedMessage("&6Reset skin cache!");
-            return;
+            case "clearcache":
+            case "resetcache":
+                MojangApi.clearCache();
+                executor.sendFormattedMessage("&6Reset skin cache!");
+                return;
+            case "cleardefaults":
+            case "resetdefaults":
+                SpoofedSettings.clearDefaults();
+                executor.sendFormattedMessage("&6Reset spoof defaults!");
+                return;
         }
 
         // Main spoof command
@@ -41,18 +59,49 @@ public class SpoofCommandBase
         String targetPlayer;
         String setting;
         String data;
+        boolean isTargetSelf;
+        String modifierString;
+        Modifier modifier;
 
-        if (args.length >= 3)
+        // Parse args
+        if (subCommands.contains(args[0].toLowerCase()))    // Player spoofing themselves
         {
-            targetPlayer = args[0];
-            setting = args[1];
-            data = args[2];
-        }
-        else
-        {
+            isTargetSelf = true;
             targetPlayer = settingsManager.getRealUser(executor.getName());
             setting = args[0];
             data = args[1];
+            modifierString = args.length > 2 ? args[2] : null;
+        }
+        else if (args.length >= 3)  // Player spoofing another player
+        {
+            isTargetSelf = false;
+            targetPlayer = args[0];
+            setting = args[1];
+            data = args[2];
+            modifierString = args.length > 3 ? args[3] : null;
+        }
+        else
+        {
+            messageHelp(executor);
+            return;
+        }
+
+        // Get modifier
+        if (modifierString != null)
+        {
+            try
+            {
+                modifier = Modifier.valueOf(modifierString.toUpperCase());
+            }
+            catch (IllegalArgumentException e)
+            {
+                executor.sendFormattedMessage("&6Unknown modifier &c\"" + modifierString + "\"");
+                return;
+            }
+        }
+        else
+        {
+            modifier = Modifier.NONE;
         }
 
         SpoofedSettings settings = settingsManager.getPlayerSettings(targetPlayer);
@@ -62,39 +111,69 @@ public class SpoofCommandBase
                 settings.setSpoofedName(data);
                 settings.setSpoofedIp(NetworkUtil.getRandomIp());
 
-                MojangApi.getUUID(data).whenComplete((uuidResponse, throwable) ->
+                if (modifier == Modifier.OFFLINE)
                 {
-                    settings.setSpoofedId(uuidResponse);
-                    if (uuidResponse.isOnlineMode())
+                    settings.setSpoofedId(MojangApi.getOfflineUUID(data));
+                    messageComplete(executor, targetPlayer, isTargetSelf, setting, data, modifier);
+                }
+                else
+                {
+                    MojangApi.getUUID(data).whenComplete((uuidResponse, throwable) ->
                     {
-                        settings.setSpoofedName(uuidResponse.getName());
-                        MojangApi.getSkin(uuidResponse.getId()).whenComplete((loginResponse, throwable1) ->
+                        settings.setSpoofedId(uuidResponse);
+                        if (uuidResponse.isOnlineMode())
                         {
-                            settings.setSpoofedProfile(loginResponse);
-                            messageComplete(executor, setting, uuidResponse.getName());
-                        });
-                    }
-                    else
-                    {
-                        messageComplete(executor, setting, uuidResponse.getName());
-                    }
-                });
+                            settings.setSpoofedName(uuidResponse.getName());
+                            MojangApi.getSkin(uuidResponse.getId()).whenComplete((loginResponse, throwable1) ->
+                            {
+                                settings.setSpoofedProfile(loginResponse);
+                                messageComplete(executor, targetPlayer, isTargetSelf, setting, uuidResponse.getName(), modifier);
+                            });
+                        }
+                        else
+                        {
+                            messageComplete(executor, targetPlayer, isTargetSelf, setting, data, modifier);
+                        }
+                    });
+                }
                 break;
             case "name":
-                settings.setSpoofedName(StringEscapeUtils.unescapeJava(data));
-                messageComplete(executor, setting, data);
+                if (modifier == Modifier.RAW)
+                {
+                    settings.setSpoofedName(data);
+                }
+                else
+                {
+                    settings.setSpoofedName(StringEscapeUtils.unescapeJava(data));
+                }
+                messageComplete(executor, targetPlayer, isTargetSelf, setting, data, modifier);
                 break;
             case "ip":
                 settings.setSpoofedIp(data);
-                messageComplete(executor, setting, data);
+                messageComplete(executor, targetPlayer, isTargetSelf, setting, data, modifier);
                 break;
             case "id":
             case "uuid":
-                MojangApi.getUUID(data).whenComplete((uuidResponse, throwable) ->
+                if (modifier == Modifier.NONE)
                 {
-                    settings.setSpoofedId(uuidResponse);
-                    messageComplete(executor, setting, data);
-                });
+                    MojangApi.getUUID(data).whenComplete((uuidResponse, throwable) ->
+                    {
+                        settings.setSpoofedId(uuidResponse);
+                        messageComplete(executor, targetPlayer, isTargetSelf, setting, data, modifier);
+                    });
+                }
+                else
+                {
+                    if (modifier == Modifier.OFFLINE)
+                    {
+                        settings.setSpoofedId(MojangApi.getOfflineUUID(data));
+                    }
+                    else if (modifier == Modifier.RAW)
+                    {
+                        settings.setSpoofedId(new UUIDResponse(null, UUID.nameUUIDFromBytes(data.getBytes(StandardCharsets.UTF_8)), false));
+                    }
+                    messageComplete(executor, targetPlayer, isTargetSelf, setting, data, modifier);
+                }
                 break;
             case "skin":
                 MojangApi.getUUID(data).whenComplete((uuidResponse, throwable) ->
@@ -104,7 +183,7 @@ public class SpoofCommandBase
                         MojangApi.getSkin(uuidResponse.getId()).whenComplete((loginResponse, throwable1) ->
                         {
                             settings.setSpoofedProfile(loginResponse);
-                            messageComplete(executor, setting, data);
+                            messageComplete(executor, targetPlayer, isTargetSelf, setting, data, modifier);
                         });
                     }
                     else
@@ -113,33 +192,48 @@ public class SpoofCommandBase
                     }
                 });
                 break;
+            case "host":
+                if (modifier == Modifier.DEFAULT)
+                {
+                    SpoofedSettings.setDefaultHost(data);
+                }
+                else
+                {
+                    settings.setSpoofedHost(data);
+                }
+                messageComplete(executor, targetPlayer, isTargetSelf, setting, data, modifier);
+                break;
             default:
                 executor.sendFormattedMessage("&6Unknown setting &c\"" + setting + "\"");
-                return;
         }
     }
 
     public List<String> tabComplete(AbstractExecutor executor, String[] args)
     {
         List<String> suggestions = new ArrayList<>();
-        boolean isPlayer = executor.isPlayer();
+        // Technically not accurate if target players name is the same as a sub command
+        boolean isTargetSelf = executor.isPlayer() && (args.length > 0 && subCommands.contains(args[0]));
+        String subCommand = args.length > 0 ? (isTargetSelf ? args[0] : (args.length > 1 ? args[1] : "")) : "";
 
         switch (args.length)
         {
             case 0:
             case 1:
-                if (isPlayer)
-                    return spoofSuggestions;
-                else
-                    suggestions.add("<player>");
+                if (executor.isPlayer()) suggestions.addAll(subCommands);
+                suggestions.add("<player>");
                 break;
             case 2:
-                if (isPlayer)
-                    return getSubSuggestions(args[0]);
+                if (isTargetSelf)
+                    return getSubSuggestions(subCommand);
                 else
-                    return spoofSuggestions;
+                    return subCommands;
             case 3:
-                if (!isPlayer) return getSubSuggestions(args[1]);
+                if (isTargetSelf && subModifiers.containsKey(subCommand))
+                    return subModifiers.get(subCommand);
+                else
+                    return getSubSuggestions(subCommand);
+            case 4:
+                if (!isTargetSelf) return subModifiers.get(subCommand);
                 break;
         }
 
@@ -150,11 +244,9 @@ public class SpoofCommandBase
     {
         List<String> suggestions = new ArrayList<>();
 
-        switch (subCommand)
+        if (subCommand.equalsIgnoreCase("ip"))
         {
-            case "ip":
-                suggestions.add(NetworkUtil.getRandomIp());
-                break;
+            suggestions.add(NetworkUtil.getRandomIp());
         }
 
         return suggestions;
@@ -163,12 +255,16 @@ public class SpoofCommandBase
     private void messageHelp(AbstractExecutor executor)
     {
         executor.sendFormattedMessage("&c&lSpoof Usage");
-        executor.sendFormattedMessage("&6/spoof [player] <player(name/id/skin)/ip>[:raw] <data>");
+        executor.sendFormattedMessage("&6/spoof [player] <player(name/id/skin)/ip/host> <data> [modifier]");
         executor.sendFormattedMessage("&6/spoof clearcache");
+        executor.sendFormattedMessage("&6/spoof cleardefaults");
+        executor.sendFormattedMessage("&9Common modifiers: &eraw offline default");
     }
 
-    private void messageComplete(AbstractExecutor executor, String setting, String data)
+    private void messageComplete(AbstractExecutor executor, String target, boolean isTargetSelf, String setting, String data, Modifier modifier)
     {
-        executor.sendFormattedMessage("&6Updated spoofed &c" + setting + "&6 setting to &c" + data);
+        String name = isTargetSelf ? "your" : "&c" + target + "'s";
+        executor.sendFormattedMessage(String.format("&6Updated %s &6spoofed &c%s &6to &c%s &o(modifier: %s)",
+                name, setting, data, modifier.name()));
     }
 }
