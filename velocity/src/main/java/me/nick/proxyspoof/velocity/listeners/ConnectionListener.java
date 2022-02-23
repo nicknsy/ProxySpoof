@@ -8,6 +8,7 @@ import com.velocitypowered.api.event.connection.PreLoginEvent;
 import com.velocitypowered.api.event.player.GameProfileRequestEvent;
 import com.velocitypowered.api.util.GameProfile;
 import com.velocitypowered.proxy.connection.client.InitialInboundConnection;
+import com.velocitypowered.proxy.connection.client.LoginInboundConnection;
 import me.nick.proxyspoof.common.SettingsManager;
 import me.nick.proxyspoof.common.SpoofedSettings;
 import me.nick.proxyspoof.common.mojang.LoginResponse;
@@ -31,15 +32,16 @@ public class ConnectionListener
     @Subscribe(order = PostOrder.FIRST)
     public EventTask onPreLogin(PreLoginEvent event)
     {
-        if (!(event.getConnection() instanceof InitialInboundConnection)) return null;
+        if (!(event.getConnection() instanceof LoginInboundConnection)) return null;
 
         // Get defaults for settings and update reflection fields
         return EventTask.resumeWhenComplete(settingsManager.initializeAndGet(event.getUsername()).whenComplete((settings, throwable) ->
         {
-            InitialInboundConnection inboundCon = (InitialInboundConnection) event.getConnection();
-
             try
             {
+                LoginInboundConnection loginCon = (LoginInboundConnection) event.getConnection();
+                InitialInboundConnection inboundCon = (InitialInboundConnection) INBOUND_DELEGATE_FIELD.get(loginCon);
+
                 // Set virtual host and ip
                 Object ipHolder = IP_HOLDER_FIELD.get(inboundCon.getRemoteAddress());
                 IP_HOLDER_HOSTNAME_FIELD.set(ipHolder, settings.getSpoofedIp());
